@@ -1,5 +1,3 @@
-# logsage/preprocess/log_filter.py
-
 from logsage.config import KEYWORDS, LOG_TAIL_LINES
 
 def read_log(path: str) -> list[str]:

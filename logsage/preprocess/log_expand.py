@@ -1,5 +1,3 @@
-# logsage/preprocess/log_expand.py
-
 from logsage.config import EXPAND_BEFORE, EXPAND_AFTER
 
 def expand_log_blocks(log_lines: list[str], key_line_nums: list[int]) -> list[str]:
