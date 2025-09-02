@@ -1,9 +1,8 @@
 # logsage/run_pipeline.py
 
-from preprocess import (
+from core import (
     read_log,
     filter_log_lines,
-    expand_log_blocks,
     assign_initial_weights,
     enhance_weights_by_pattern,
     expand_context_around_high_weight_lines,
