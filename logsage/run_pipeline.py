@@ -29,10 +29,10 @@ def run_logsage_pipeline(log_path):
     candidate_blocks = expand_context_around_high_weight_lines(raw_log, weights)
 
     # 6. Rank blocks by weight density
-    ranked_blocks = rank_blocks_by_density(raw_log, candidate_blocks, weights)
+    ranked_blocks = rank_blocks_by_density(raw_log, candidate_blocks)
 
     # 7. Select blocks under token budget using greedy strategy
-    final_blocks = select_blocks_within_token_budget(ranked_blocks, token_limit=TOKEN_LIMIT)
+    final_blocks = select_blocks_within_token_budget(ranked_blocks)
 
     # 8. Extract final lines to return or feed to LLM
     final_log = [line for block in final_blocks for line in block]

@@ -1,0 +1,7 @@
+# LogSage Requirements
+# 
+# This project uses only Python standard library modules.
+# No external dependencies are required.
+
+# Python version requirement
+# Requires Python 3.7+ for typing module features
