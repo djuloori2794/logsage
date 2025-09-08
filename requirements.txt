@@ -1,7 +1,8 @@
 # LogSage Requirements
-# 
-# This project uses only Python standard library modules.
-# No external dependencies are required.
 
-# Python version requirement
+# Core dependencies (Python standard library only)
 # Requires Python 3.7+ for typing module features
+
+# Development dependencies
+pytest>=7.0.0        # Testing framework
+pytest-cov>=4.0.0    # Coverage reporting
