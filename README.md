@@ -31,26 +31,31 @@ Large log files often contain thousands of lines, making them impractical for LL
 
 ## Usage
 
+**Note:** All commands should be run from the project root directory.
+
 ### Basic Usage - Raw Log Processing
 
 ```bash
-python logsage/run_pipeline.py <path_to_log_file>
+PYTHONPATH=. python3 logsage/run_pipeline.py <path_to_log_file>
 ```
 
 ### RCA Template Generation - For LLM Analysis
 
 ```bash
-python logsage/run_pipeline.py <path_to_log_file> --rca
+PYTHONPATH=. python3 logsage/run_pipeline.py <path_to_log_file> --rca
 ```
 
 ### Examples
 
 ```bash
 # Process build log and output pruned log lines
-python logsage/run_pipeline.py /path/to/build.log
+PYTHONPATH=. python3 logsage/run_pipeline.py /path/to/build.log
 
 # Generate structured RCA prompt for LLM analysis
-python logsage/run_pipeline.py /path/to/build.log --rca
+PYTHONPATH=. python3 logsage/run_pipeline.py /path/to/build.log --rca
+
+# Test with provided sample logs
+PYTHONPATH=. python3 logsage/run_pipeline.py tests/test_data/huge_build.log --rca
 ```
 
 **Output Modes:**
