@@ -1,17 +1,24 @@
 from typing import List, Set
-from logsage.config import WEIGHT_COUNT_THRESHOLD, WEIGHT_THRESHOLD_LOW, WEIGHT_THRESHOLD_HIGH, NUM_LINES_BEFORE, NUM_LINES_AFTER
+from logsage.config import WEIGHT_COUNT_THRESHOLD, WEIGHT_THRESHOLD_LOW, WEIGHT_THRESHOLD_HIGH, EXPAND_BEFORE, EXPAND_AFTER
 
 
 def compute_adaptive_threshold(weights: List[int], gamma: int = WEIGHT_COUNT_THRESHOLD) -> int:
     """
-    Compute the threshold (θ) that determines which log lines are important enough
-    to expand context around.
-
-    θ = 1 if:
-        - All weights are 1 (max = 1), OR
-        - The number of weights ≥ 1 is small (≤ γ)
-    Otherwise:
-        - θ = 3
+    Compute the adaptive threshold θ from Equation 2 for contextual window expansion.
+    
+    Equation 2: θ = { 1 if max(W) = 1 or |{wi ≥ 1}| ≤ γ
+                    { 3 otherwise
+    
+    Args:
+        weights (List[int]): Weight vector for all log lines
+        gamma (int): γ=500, threshold for determining if filtering is sparse
+        
+    Returns:
+        int: Adaptive threshold θ (1 for broad expansion, 3 for selective)
+        
+    Logic:
+        - θ=1: When max weight is 1 OR count of weighted lines ≤ γ (weak filtering)
+        - θ=3: When filtering successfully identified high-weight critical entries
     """
     max_weight = max(weights)
     num_nonzero_weights = sum(1 for w in weights if w >= 1)
@@ -24,15 +31,34 @@ def compute_adaptive_threshold(weights: List[int], gamma: int = WEIGHT_COUNT_THR
 def expand_context_around_high_weight_lines(
         log_lines: List[str],
         weights: List[int],
-        lines_before: int = NUM_LINES_BEFORE,
-        lines_after: int = NUM_LINES_AFTER,
+        lines_before: int = EXPAND_BEFORE,
+        lines_after: int = EXPAND_AFTER,
         gamma: int = WEIGHT_COUNT_THRESHOLD
 ) -> Set[int]:
     """
-    For each log line with weight ≥ θ, include its neighboring lines to preserve context.
-
+    Contextual Window Expansion: Ensures contextual integrity of high-weight critical log lines.
+    
+    For log lines with weights above the adaptive threshold θ, expands into log blocks
+    in their neighborhood [i - m, i + n] to preserve semantic continuity.
+    
+    Args:
+        log_lines (List[str]): Full list of all log lines
+        weights (List[int]): Weight vector for all log lines (from weight enhancement)
+        lines_before (int): m=4 lines before high-weight line (same as Log Expansion)
+        lines_after (int): n=6 lines after high-weight line (same as Log Expansion) 
+        gamma (int): γ=500 threshold for determining sparse vs adequate filtering
+    
     Returns:
-        A set of line indices to keep.
+        Set[int]: Set of line indices to include in candidate pool for block ranking
+        
+    Adaptive Threshold (Equation 2):
+        θ = 1 if max(W) = 1 or |{wi ≥ 1}| ≤ γ  (broad expansion - weak filtering)
+        θ = 3 otherwise                        (selective expansion - strong filtering)
+    
+    Expansion Strategy:
+        - When θ=1: Broader contextual expansion (weak filtering detected)
+        - When θ=3: Selective expansion around high-weight entries (strong filtering)
+        - Uses same m=4, n=6 parameters as Log Expansion stage
     """
     assert len(log_lines) == len(weights), "Mismatch between log lines and weights"
 
