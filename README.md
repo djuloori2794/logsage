@@ -8,35 +8,54 @@ Large log files often contain thousands of lines, making them impractical for LL
 
 ## Features
 
-- **Smart Filtering**: Identifies relevant log sections using keyword matching and tail analysis
-- **Weight-Based Selection**: Assigns importance scores to log lines based on failure patterns and keywords
-- **Context Preservation**: Maintains surrounding context for high-importance lines
-- **Token Budget Management**: Ensures final output stays within configurable token limits (default: 22,000 tokens)
-- **Failure Detection**: Specialized patterns for detecting test failures, errors, and critical events
+- **Smart Filtering**: Identifies relevant log sections using keyword matching, tail analysis, and deduplication
+- **Asymmetric Log Expansion**: Expands around key error lines (4 before, 6 after) to preserve critical context  
+- **Weight-Based Selection**: Assigns importance scores using adaptive algorithms from research
+- **Pattern Enhancement**: Emphasizes critical failures and error patterns with specialized weighting
+- **Contextual Window Expansion**: Preserves semantic continuity around high-importance lines
+- **Density-Based Ranking**: Prioritizes log blocks by information density for optimal selection
+- **Token Budget Management**: Greedy selection within configurable token limits (default: 22,000 tokens)
+- **RCA Template Integration**: Generates structured prompts for LLM-based root cause analysis
 
 ## Pipeline Stages
 
 1. **Log Reading**: Loads raw log file
-2. **Initial Filtering**: Filters lines based on keywords and tail extraction
-3. **Weight Assignment**: Assigns initial importance weights to all lines
-4. **Pattern Enhancement**: Boosts weights for failure patterns and keywords
-5. **Context Expansion**: Expands blocks around high-weight lines to preserve context
-6. **Block Ranking**: Ranks blocks by weight density
-7. **Budget Selection**: Selects top blocks within token budget using greedy strategy
+2. **Key Log Filtering**: Filters lines using keyword matching, tail analysis, and deduplication  
+3. **Log Expansion**: Asymmetric expansion around key error lines (m=4, n=6) to preserve context
+4. **Initial Weight Assignment**: Assigns importance weights using adaptive thresholds (α=0.7, β=500)
+5. **Pattern-Based Weight Enhancement**: Boosts critical failures, section headers, and error patterns
+6. **Contextual Window Expansion**: Adaptive threshold expansion (θ=1 or 3) around high-weight lines  
+7. **Density-Based Block Ranking**: Ranks contiguous blocks by weight density using Equation 3
+8. **Token Budget Selection**: Greedy selection within 22,000 token limit
+9. **RCA Template Generation**: Creates structured prompts for LLM-based root cause analysis
 
 ## Usage
+
+### Basic Usage - Raw Log Processing
 
 ```bash
 python logsage/run_pipeline.py <path_to_log_file>
 ```
 
-### Example
+### RCA Template Generation - For LLM Analysis
 
 ```bash
-python logsage/run_pipeline.py /path/to/build.log
+python logsage/run_pipeline.py <path_to_log_file> --rca
 ```
 
-This will process the log file and output the most relevant sections to stdout.
+### Examples
+
+```bash
+# Process build log and output pruned log lines
+python logsage/run_pipeline.py /path/to/build.log
+
+# Generate structured RCA prompt for LLM analysis
+python logsage/run_pipeline.py /path/to/build.log --rca
+```
+
+**Output Modes:**
+- **Raw mode**: Outputs filtered and ranked log lines for direct analysis
+- **RCA mode**: Generates structured prompt template with role-playing instructions for LLM-based root cause analysis
 
 ## Configuration
 
@@ -53,24 +72,38 @@ Key parameters can be adjusted in `logsage/config.py`:
 ```
 logsage/
 ├── config.py              # Configuration parameters
-├── run_pipeline.py         # Main pipeline orchestrator
+├── run_pipeline.py         # Main pipeline orchestrator  
+├── rca_template.py         # RCA prompt template for LLM analysis
 └── core/
-    ├── log_filter.py       # Initial log filtering
-    ├── weight_init.py      # Weight assignment
-    ├── weight_enhance.py   # Pattern-based weight enhancement
-    ├── context_expand.py   # Context expansion around important lines
-    ├── block_ranker.py     # Block ranking by density
-    └── token_budget.py     # Token budget management
+    ├── log_filter.py       # Key log filtering with deduplication
+    ├── log_expand.py       # Asymmetric log expansion around errors
+    ├── weight_init.py      # Initial weight assignment (Equation 1)
+    ├── weight_enhance.py   # Pattern-based weight enhancement  
+    ├── context_expand.py   # Contextual window expansion (Equation 2)
+    ├── block_ranker.py     # Density-based block ranking (Equation 3)
+    └── token_budget.py     # Token budget management with greedy selection
 ```
 
 ## Algorithm
 
-LogSage implements a sophisticated weighting algorithm that:
+LogSage implements a research-based Token Overflow Pruning system with four key components:
 
-1. Identifies candidate lines using keyword matching and log tail analysis
-2. Assigns higher weights to lines containing failure patterns
-3. Provides bonus weights for curated keywords
-4. Expands context around high-weight lines to maintain readability
-5. Uses greedy selection to maximize information density within token constraints
+### 1. Key Log Filtering & Expansion
+- **Algorithm 1**: Multi-strategy filtering (keyword matching, tail prioritization, deduplication)
+- **Asymmetric expansion**: m=4 lines before, n=6 lines after critical errors to capture context
 
-This approach ensures that the most critical information (errors, failures, exceptions) is preserved while maintaining enough context for effective LLM analysis.
+### 2. Adaptive Weight Assignment (Equation 1)
+- **High confidence**: Weight=3 when |I|/|L| ≤ α=0.7 and |I| ≤ β=500  
+- **Standard confidence**: Weight=1 for candidate lines
+- **No weight**: Weight=0 for non-candidates
+
+### 3. Contextual Window Expansion (Equation 2)
+- **Adaptive threshold**: θ=1 (broad) when max(W)=1 or sparse filtering, θ=3 (selective) otherwise
+- **Context preservation**: Expands [i-4, i+6] around lines with weight ≥ θ
+
+### 4. Density-Based Ranking & Selection (Equation 3)
+- **Block density**: density(Bⱼ) = Σwᵢ/(eⱼ - sⱼ + 1) for contiguous blocks
+- **Greedy selection**: Maximizes information within 22,000 token budget
+- **RCA template**: Structured prompt generation for LLM-based root cause analysis
+
+This approach ensures optimal information density while maintaining semantic continuity for effective LLM-based failure diagnosis.
